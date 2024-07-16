@@ -1,0 +1,5 @@
+/checkpoints
+/dataset
+/sample_c2i_ddp.py
+/test_cfg.ipynb
+/wandb
