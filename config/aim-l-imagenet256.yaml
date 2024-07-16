@@ -16,7 +16,7 @@ model:
     stage1_config:
       target: models.stage1.vq_model.VQModel
       params:
-        ckpt_path: ../VQRetNet/checkpoints/vq_ds16_c2i.pt
+        ckpt_path: ./checkpoints/vq_f16.pt
         embed_dim: 8
         n_embed: 16384
         ddconfig:
