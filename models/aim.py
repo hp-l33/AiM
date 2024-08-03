@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from util.helper import instantiate_from_config
 from .stage2.configuration_mamba import MambaConfig
-from .stage2.mixer_seq_vision import MambaLMHeadModel
+from .stage2.mixer_seq_simple import MambaLMHeadModel
 
 
 class AiM(nn.Module):
@@ -52,7 +52,7 @@ class AiM(nn.Module):
         return logits, target
 
     @torch.no_grad()
-    def sample_cfg(self, sos_token, temperature=1.0, top_k=300, top_p=0.96, fast=True):
+    def sample_cfg(self, sos_token, temperature=1.0, top_k=0, top_p=1.0, min_p=0.0, fast=True):
         # classifier free guidance
         sos_token = torch.cat([sos_token, torch.full_like(sos_token, self.num_classes)])
 
@@ -63,13 +63,14 @@ class AiM(nn.Module):
                                 temperature=temperature,
                                 top_p=top_p,
                                 top_k=top_k,
+                                min_p=min_p,
                                 cg=fast)
         
         self.mamba._decoding_cache = None
         return x[:, 1:]
     
     @torch.no_grad()
-    def generate(self, c=None, batch=4, temperature=1.0, top_k=300, top_p=0.96, fast=True):
+    def generate(self, c=None, batch=4, temperature=1.0, top_k=0, top_p=1.0, min_p=0.0, fast=True):
         if c is None:
             c = torch.randint(self.num_classes, (batch, 1), device=self.mamba.lm_head.weight.device)
         else:
@@ -77,7 +78,7 @@ class AiM(nn.Module):
 
         sos_tokens = self.encode_to_c(c)
         
-        tokens = self.sample_cfg(sos_tokens, temperature=temperature, top_k=top_k, top_p=top_p, fast=fast)[:batch]
+        tokens = self.sample_cfg(sos_tokens, temperature=temperature, top_k=top_k, top_p=top_p, min_p=min_p, fast=fast)[:batch]
         
         shape = (batch, self.num_embed_dim, int(tokens.shape[-1]**0.5), int(tokens.shape[-1]**0.5))
         imgs = self.decode_to_img(tokens, shape)

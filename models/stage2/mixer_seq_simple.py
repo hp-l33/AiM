@@ -265,16 +265,16 @@ class MixerModel(nn.Module):
         self.embeddings = GPT2Embeddings(d_model, vocab_size, 1025, **factory_kwargs)
         self.cls_embed = LabelEmbedder(num_classes=num_classes, hidden_size=d_model)
         
-        adaln_num = 3
-        if d_intermediate != 0:
-            adaln_num += 3
+        # double for MLP
+        adaln_num = 3 + (3 if d_intermediate != 0 else 0)
         
         # adaLN-single
         self.adaln_single = nn.Sequential(
             nn.SiLU(inplace=False),
             AdaLNSingle(d_model, adaln_num * d_model, num_channels=adaln_num)
         ) if adaln_single else nn.Identity()
-        # adaLN before lm_heads
+
+        # finel adaLN before lm_heads
         self.final_layer = FinalLayer(d_model)
 
         # We change the order of residual and layer norm:
@@ -375,52 +375,39 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
         device=None,
         dtype=None,
     ) -> None:
+        super().__init__()
         self.config = config
-        d_model = config.d_model
-        n_layer = config.n_layer
-        d_intermediate = config.d_intermediate
-        vocab_size = config.vocab_size
-        ssm_cfg = config.ssm_cfg
-        attn_layer_idx = config.attn_layer_idx
-        attn_cfg = config.attn_cfg
-        rms_norm = config.rms_norm
-        residual_in_fp32 = config.residual_in_fp32
-        fused_add_norm = config.fused_add_norm
-        pad_vocab_size_multiple = config.pad_vocab_size_multiple
         factory_kwargs = {"device": device, "dtype": dtype}
 
-        super().__init__()
-        if vocab_size % pad_vocab_size_multiple != 0:
-            vocab_size += pad_vocab_size_multiple - (vocab_size % pad_vocab_size_multiple)
+        # if vocab_size % pad_vocab_size_multiple != 0:
+            # vocab_size += pad_vocab_size_multiple - (vocab_size % pad_vocab_size_multiple)
 
-        self.num_classes = self.config.num_classes
-        self.adaln_single = self.config.adaln_single
         # TODO: 'cfg_scale' should be passed as a parameter when calling inference
         self.cfg_scale = 1.5
 
         self.backbone = MixerModel(
-            d_model=d_model,
-            n_layer=n_layer,
-            d_intermediate=d_intermediate,
-            vocab_size=vocab_size,
-            ssm_cfg=ssm_cfg,
-            attn_layer_idx=attn_layer_idx,
-            attn_cfg=attn_cfg,
-            rms_norm=rms_norm,
+            d_model=config.d_model,
+            n_layer=config.n_layer,
+            d_intermediate=config.d_intermediate,
+            vocab_size=config.vocab_size,
+            ssm_cfg=config.ssm_cfg,
+            attn_layer_idx=config.attn_layer_idx,
+            attn_cfg=config.attn_cfg,
+            rms_norm=config.rms_norm,
             initializer_cfg=initializer_cfg,
-            fused_add_norm=fused_add_norm,
-            residual_in_fp32=residual_in_fp32,
-            num_classes=self.num_classes,
-            adaln_single=self.adaln_single,
+            fused_add_norm=config.fused_add_norm,
+            residual_in_fp32=config.residual_in_fp32,
+            num_classes=config.num_classes,
+            shared_adaln=config.adaln_single,
             **factory_kwargs,
         )
-        self.lm_head = nn.Linear(d_model, vocab_size, bias=False, **factory_kwargs)
+        self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False, **factory_kwargs)
 
         # Initialize weights and apply final processing
         self.apply(
             partial(
                 _init_weights,
-                n_layer=n_layer,
+                n_layer=config.n_layer,
                 **(initializer_cfg if initializer_cfg is not None else {}),
             )
         )
@@ -439,10 +426,9 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
         """
         is_train = inference_params is None
 
-        if not is_train:
-            if inference_params.seqlen_offset > 0:
-                input_ids, _ = torch.split(input_ids, len(input_ids) // 2, dim=0)
-                input_ids = torch.cat([input_ids, input_ids])
+        if not is_train and inference_params.seqlen_offset > 0:
+            input_ids, _ = torch.split(input_ids, len(input_ids) // 2, dim=0)
+            input_ids = torch.cat([input_ids, input_ids])
 
         hidden_states = self.backbone(input_ids, position_ids, cond, inference_params=inference_params, **mixer_kwargs)
         if num_last_tokens > 0:

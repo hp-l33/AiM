@@ -38,10 +38,12 @@ class InferenceParams:
 
 def modify_logits_for_min_p_filtering(logits, min_p):
     """Set the logits for none min_p values to -inf. Done in-place."""
-    if min_p <= 0.0 or min_p >= 1.0:
+    if (min_p <= 0.0).any() or (min_p >= 1.0).any():
         return
     indices_to_remove = logits < min_p
     logits.masked_fill_(indices_to_remove, float("-Inf"))
+
+
 # https://github.com/NVIDIA/Megatron-LM/blob/0bb597b42c53355a567aba2a1357cc34b9d99ddd/megatron/text_generation/sampling.py
 # https://github.com/huggingface/transformers/blob/a44985b41cfa2de48a5e1de7f1f93b7483da25d1/src/transformers/generation/logits_process.py#L231
 def modify_logits_for_top_k_filtering(logits, top_k):
@@ -105,9 +107,9 @@ def sample(logits, top_k=1, top_p=0.0, min_p=0.0, temperature=1.0):
         else:
             if min_p > 0.0:
                 logits_top = logits.clone()
-                max_prob = logits_top[..., 0].item()
+                max_prob, _ = (torch.softmax(logits_top, dim=-1)).max(dim=-1, keepdim=True)
                 min_prob = max_prob * min_p
-                modify_logits_for_min_p_filtering(logits_top, min_p)
+                modify_logits_for_min_p_filtering(logits_top, min_prob)
                 if temperature != 1.0:
                     logits_top /= temperature
                 return torch.multinomial(torch.softmax(logits_top, dim=-1), num_samples=1).squeeze(dim=-1)
