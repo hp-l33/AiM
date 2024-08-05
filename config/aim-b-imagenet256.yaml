@@ -4,7 +4,7 @@ model:
     num_classes: 1000
     num_img_tokens: 256
     stage2_config:
-      target: models.stage2.configuration_mamba.MambaConfig
+      target: models.stage2.config_mamba.MambaConfig
       params:
         vocab_size: 16384
         d_model: 768

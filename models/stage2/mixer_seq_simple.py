@@ -64,6 +64,7 @@ class GPT2Embeddings(nn.Module):
         max_position_embeddings,
         padding_idx=None,
         word_embed_proj_dim=None,
+        token_drop=0.0,
         device=None,
         dtype=None,
     ):
@@ -91,6 +92,7 @@ class GPT2Embeddings(nn.Module):
             self.position_embeddings = nn.Embedding(
                 max_position_embeddings, embed_dim, **factory_kwargs
             )
+        self.token_dropout = nn.Dropout(token_drop)
         # nn.init.normal_(self.word_embeddings.weight, std=0.02)
 
     def forward(self, input_ids, position_ids=None):
@@ -99,7 +101,7 @@ class GPT2Embeddings(nn.Module):
         position_ids: (batch, seqlen)
         """
         batch_size, seqlen = input_ids.shape
-        embeddings = self.word_embeddings(input_ids)
+        embeddings = self.token_dropout(self.word_embeddings(input_ids))
         if self.project_in is not None:
             embeddings = self.project_in(embeddings)
         if self.max_position_embeddings > 0:
@@ -115,7 +117,6 @@ class LabelEmbedder(nn.Module):
     """
     Embeds class labels into vector representations. Also handles label dropout for classifier-free guidance.
     """
-
     def __init__(self, num_classes, hidden_size, dropout_prob=0.1):
         super().__init__()
         use_cfg_embedding = dropout_prob > 0
@@ -158,6 +159,8 @@ def create_block(
     fused_add_norm=False,
     layer_idx=None,
     adaln_single=False,
+    mixer_drop=0.0,
+    mlp_drop=0.0,
     device=None,
     dtype=None,
 ):
@@ -252,8 +255,12 @@ class MixerModel(nn.Module):
         initializer_cfg=None,
         fused_add_norm=False,
         residual_in_fp32=False,
-        num_classes=1000,   # addded 2024-06-11
-        adaln_single=False, # addded 2024-06-14
+        num_classes=1000,
+        num_img_tokens=256,
+        adaln_single=False,
+        token_drop=0.0,
+        mixer_drop=0.0,
+        mlp_drop=0.0,
         device=None,
         dtype=None,
     ) -> None:
@@ -261,21 +268,18 @@ class MixerModel(nn.Module):
         super().__init__()
         self.residual_in_fp32 = residual_in_fp32
 
-        # TODO: 'max_position_embeddings' should be a variable
-        self.embeddings = GPT2Embeddings(d_model, vocab_size, 1025, **factory_kwargs)
+        self.embeddings = GPT2Embeddings(d_model, vocab_size, num_img_tokens+1, token_drop=token_drop, **factory_kwargs)
         self.cls_embed = LabelEmbedder(num_classes=num_classes, hidden_size=d_model)
         
-        # double for MLP
-        adaln_num = 3 + (3 if d_intermediate != 0 else 0)
+        adaln_factor = 3 + (3 if d_intermediate != 0 else 0)    # double for MLP
         
         # adaLN-single
         self.adaln_single = nn.Sequential(
             nn.SiLU(inplace=False),
-            AdaLNSingle(d_model, adaln_num * d_model, num_channels=adaln_num)
+            AdaLNSingle(d_model, adaln_factor * d_model, num_channels=adaln_factor)
         ) if adaln_single else nn.Identity()
 
-        # finel adaLN before lm_heads
-        self.final_layer = FinalLayer(d_model)
+        self.final_layer = FinalLayer(d_model)  # finel adaLN before lm_heads
 
         # We change the order of residual and layer norm:
         # Instead of LN -> Attn / MLP -> Add, we do:
@@ -301,6 +305,8 @@ class MixerModel(nn.Module):
                     fused_add_norm=fused_add_norm,
                     layer_idx=i,
                     adaln_single=adaln_single,
+                    mixer_drop=mixer_drop,
+                    mlp_drop=mlp_drop,
                     **factory_kwargs,
                 )
                 for i in range(n_layer)
@@ -379,9 +385,6 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
         self.config = config
         factory_kwargs = {"device": device, "dtype": dtype}
 
-        # if vocab_size % pad_vocab_size_multiple != 0:
-            # vocab_size += pad_vocab_size_multiple - (vocab_size % pad_vocab_size_multiple)
-
         # TODO: 'cfg_scale' should be passed as a parameter when calling inference
         self.cfg_scale = 1.5
 
@@ -398,7 +401,11 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
             fused_add_norm=config.fused_add_norm,
             residual_in_fp32=config.residual_in_fp32,
             num_classes=config.num_classes,
-            shared_adaln=config.adaln_single,
+            num_img_tokens=config.num_img_tokens,
+            adaln_single=config.adaln_single,
+            token_drop=config.token_drop,
+            mixer_drop=config.mixer_drop,
+            mlp_drop=config.mlp_drop,
             **factory_kwargs,
         )
         self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False, **factory_kwargs)

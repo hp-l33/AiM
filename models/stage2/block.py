@@ -16,7 +16,8 @@ def modulate(x, shift, scale):
 
 class Block(nn.Module):
     def __init__(
-        self, dim, mixer_cls, mlp_cls, norm_cls=nn.LayerNorm, fused_add_norm=False, residual_in_fp32=False, adaln_single=False
+        self, dim, mixer_cls, mlp_cls, norm_cls=nn.LayerNorm, fused_add_norm=False,
+        residual_in_fp32=False, adaln_single=False, mixer_drop=0.0, mlp_drop=0.0
     ):
         """
         Simple block wrapping a mixer class with LayerNorm/RMSNorm and residual connection"
@@ -35,18 +36,16 @@ class Block(nn.Module):
         self.fused_add_norm = fused_add_norm
         self.norm = norm_cls(dim)
         self.mixer = mixer_cls(dim)
-        # dropout
-        self.mixer_dropout = nn.Dropout(0.0)
-        # adaLN single
-        self.adaln_single = adaln_single
-        # alpha, beta, gamma for label embedding
-        self.adaln_num = 3
+
+        # modify
+        self.mixer_dropout = nn.Dropout(mixer_drop)
+        self.adaln_single = adaln_single    # adaLN single
+        self.adaln_factor = 3   # alpha, beta, gamma for label embedding
 
         if mlp_cls is not nn.Identity:
             self.norm2 = norm_cls(dim)
             self.mlp = mlp_cls(dim)
-            # alpha, beta, gamma for text embedding, text2image will be implemented in future work
-            self.adaln_num += 3
+            self.adaln_factor += 3
             self.mlp_dropout = nn.Dropout(0.0)
         else:
             self.mlp = None
@@ -58,11 +57,11 @@ class Block(nn.Module):
         
         # adaLN
         if adaln_single:
-            self.scale_shift_table = nn.Parameter(torch.randn(1, self.adaln_num, dim) / dim**0.5)
+            self.scale_shift_table = nn.Parameter(torch.randn(1, self.adaln_factor, dim) / dim**0.5)
         else:
             self.adaLN_modulation = nn.Sequential(
                 nn.SiLU(),
-                nn.Linear(dim, self.adaln_num * dim, bias=True)
+                nn.Linear(dim, self.adaln_factor * dim, bias=True)
             )
             # zero-out
             nn.init.constant_(self.adaLN_modulation[-1].weight, 0)
@@ -95,18 +94,17 @@ class Block(nn.Module):
             )
         # adaLN
         if self.adaln_single:
-            # class-conditional
-            if self.adaln_num == 3:
-                shift_mixer, scale_mixer, gate_mixer = (self.scale_shift_table + cls_embed).unbind(1)
-            # text-conditional
-            else:
-                shift_mixer, shift_mlp, scale_mixer, scale_mlp, gate_mixer, gate_mlp = (self.scale_shift_table + cls_embed).unbind(1)
+            scale_shift_params = (self.scale_shift_table + cls_embed).unbind(1)
         else:
-            if self.adaln_num == 3:
-                shift_mixer, scale_mixer, gate_mixer = self.adaLN_modulation(cls_embed).chunk(self.adaln_num, dim=1)
-            else:
-                shift_mixer, shift_mlp, scale_mixer, scale_mlp, gate_mixer, gate_mlp = self.adaLN_modulation(cls_embed).chunk(self.adaln_num, dim=1)
+            scale_shift_params = self.adaLN_modulation(cls_embed).chunk(self.adaln_factor, dim=1)
 
+        if self.adaln_factor == 3:
+            shift_mixer, scale_mixer, gate_mixer = scale_shift_params
+        elif self.adaln_factor == 6:
+            shift_mixer, shift_mlp, scale_mixer, scale_mlp, gate_mixer, gate_mlp = scale_shift_params
+        else:
+            raise ValueError("Unsupported adaln_factor value")
+        
         # hidden_states = self.mixer(hidden_states, inference_params=inference_params, **mixer_kwargs)
         hidden_states = self.mixer_dropout(
             gate_mixer.unsqueeze(1) * self.mixer(

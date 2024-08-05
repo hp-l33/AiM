@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from util.helper import instantiate_from_config
-from .stage2.configuration_mamba import MambaConfig
+from .stage2.config_mamba import MambaConfig
 from .stage2.mixer_seq_simple import MambaLMHeadModel
 
 
@@ -27,10 +27,6 @@ class AiM(nn.Module):
 
     def init_2nd_stage_model(self, config):
         mamba_config = instantiate_from_config(config)
-        # mamba_config = MambaConfig()
-        # for k, v in config['params'].items():
-        #     if hasattr(mamba_config, k):
-        #         setattr(mamba_config, k, v)
         model = MambaLMHeadModel(mamba_config)
         return model
 
@@ -116,7 +112,9 @@ class AiM(nn.Module):
             if 'para' in key:
                 new_key = key.replace("adaLN_parameters", "scale_shift_table")
                 ckpt[new_key] = ckpt.pop(key)
+            if 'position_embeddings' in key:
+                ckpt[key] = (ckpt.pop(key))[:self.num_img_tokens+1:]
 
-        self.load_state_dict(ckpt, strict=True)
+        self.load_state_dict(ckpt, strict=False)
         print(f"Restored from {ckpt_path}")
     
