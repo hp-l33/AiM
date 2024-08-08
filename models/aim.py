@@ -109,6 +109,9 @@ class AiM(nn.Module):
             if 'shared' in key:
                 new_key = key.replace("shared_adaln", "adaln_single")
                 ckpt[new_key] = ckpt.pop(key)
+            if 'adaln_single' in key:
+                new_key = key.replace("adaln_single", "adaln_group")
+                ckpt[new_key] = ckpt.pop(key)
             if 'para' in key:
                 new_key = key.replace("adaLN_parameters", "scale_shift_table")
                 ckpt[new_key] = ckpt.pop(key)

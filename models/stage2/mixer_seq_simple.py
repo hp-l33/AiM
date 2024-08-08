@@ -29,9 +29,9 @@ except ImportError:
     RMSNorm, layer_norm_fn, rms_norm_fn = None, None, None
 
 
-class AdaLNSingle(nn.Linear):
+class GroupAdaLN(nn.Linear):
     def __init__(self, in_features, out_features, num_channels, bias=True):
-        super(AdaLNSingle, self).__init__(in_features, out_features, bias)
+        super(GroupAdaLN, self).__init__(in_features, out_features, bias)
         self.num_channels = num_channels
 
     def forward(self, cond):
@@ -158,7 +158,7 @@ def create_block(
     residual_in_fp32=False,
     fused_add_norm=False,
     layer_idx=None,
-    adaln_single=False,
+    adaln_group=False,
     mixer_drop=0.0,
     mlp_drop=0.0,
     device=None,
@@ -257,7 +257,8 @@ class MixerModel(nn.Module):
         residual_in_fp32=False,
         num_classes=1000,
         num_img_tokens=256,
-        adaln_single=False,
+        adaln_group=False,
+        n_groups=4,
         token_drop=0.0,
         mixer_drop=0.0,
         mlp_drop=0.0,
@@ -272,12 +273,13 @@ class MixerModel(nn.Module):
         self.cls_embed = LabelEmbedder(num_classes=num_classes, hidden_size=d_model)
         
         adaln_factor = 3 + (3 if d_intermediate != 0 else 0)    # double for MLP
-        
-        # adaLN-single
-        self.adaln_single = nn.Sequential(
+        self.n_groups = n_groups
+
+        # adaLN-group
+        self.adaln_group = nn.Sequential(
             nn.SiLU(inplace=False),
-            AdaLNSingle(d_model, adaln_factor * d_model, num_channels=adaln_factor)
-        ) if adaln_single else nn.Identity()
+            GroupAdaLN(d_model, n_groups * adaln_factor * d_model, num_channels=n_groups * adaln_factor)
+        ) if adaln_group else nn.Identity()
 
         self.final_layer = FinalLayer(d_model)  # finel adaLN before lm_heads
 
@@ -304,7 +306,7 @@ class MixerModel(nn.Module):
                     residual_in_fp32=residual_in_fp32,
                     fused_add_norm=fused_add_norm,
                     layer_idx=i,
-                    adaln_single=adaln_single,
+                    adaln_group=adaln_group,
                     mixer_drop=mixer_drop,
                     mlp_drop=mlp_drop,
                     **factory_kwargs,
@@ -346,12 +348,12 @@ class MixerModel(nn.Module):
             else:
                 hidden_states = self.embeddings(input_ids, position_ids=position_ids)
 
-        ada_cond = self.adaln_single(cond_embed)
+        ada_cond = self.adaln_group(cond_embed).chunk(self.n_groups, dim=1)
         
         residual = None
         for layer in self.layers:
             hidden_states, residual = layer(
-                hidden_states, residual, ada_cond, inference_params=inference_params
+                hidden_states, residual, ada_cond[i % self.n_groups], inference_params=inference_params
             )
         if not self.fused_add_norm:
             residual = (hidden_states + residual) if residual is not None else hidden_states
