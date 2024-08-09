@@ -1,5 +1,7 @@
 /checkpoints
 /dataset
 /sample_c2i_ddp.py
-/test_cfg.ipynb
+/*.ipynb
 /wandb
+__pycache__/
+/.ipynb_checkpoints

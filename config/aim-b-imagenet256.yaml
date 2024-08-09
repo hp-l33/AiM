@@ -1,8 +1,6 @@
 model:
   target: models.aim.AiM
   params:
-    num_classes: 1000
-    num_img_tokens: 256
     stage2_config:
       target: models.stage2.config_mamba.MambaConfig
       params:
@@ -13,6 +11,9 @@ model:
           layer: Mamba2
         d_intermediate: 0
         num_classes: 1000
+        num_img_tokens: 256
+        adaln_group: true
+        n_groups: 4
     stage1_config:
       target: models.stage1.vq_model.VQModel
       params:

@@ -17,7 +17,8 @@ class MambaConfig:
     tie_embeddings: bool = True
     num_classes: int = 1000
     num_img_tokens: int = 256
-    adaln_single: bool = False
+    adaln_group: bool = True
+    n_groups: int = 4
     token_drop: float = 0.0
     mixer_drop: float = 0.0
     mlp_drop: float = 0.0

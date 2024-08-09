@@ -6,10 +6,10 @@ from .stage2.mixer_seq_simple import MambaLMHeadModel
 
 
 class AiM(nn.Module):
-    def __init__(self, stage1_config, stage2_config, num_classes=1000, num_img_tokens=256):
+    def __init__(self, stage1_config, stage2_config):
         super().__init__()
-        self.num_classes = num_classes
-        self.num_img_tokens = num_img_tokens
+        self.num_classes = stage1_config.params.num_classes
+        self.num_img_tokens = stage1_config.params.num_img_tokens
         self.num_embed_dim = stage1_config.params.embed_dim
         
         # init all models
@@ -48,7 +48,7 @@ class AiM(nn.Module):
         return logits, target
 
     @torch.no_grad()
-    def sample_cfg(self, sos_token, temperature=1.0, top_k=0, top_p=1.0, min_p=0.0, fast=True):
+    def sample_cfg(self, sos_token, temperature=1.0, top_k=0, top_p=1.0, fast=True):
         # classifier free guidance
         sos_token = torch.cat([sos_token, torch.full_like(sos_token, self.num_classes)])
 
@@ -59,14 +59,13 @@ class AiM(nn.Module):
                                 temperature=temperature,
                                 top_p=top_p,
                                 top_k=top_k,
-                                min_p=min_p,
                                 cg=fast)
         
         self.mamba._decoding_cache = None
         return x[:, 1:]
     
     @torch.no_grad()
-    def generate(self, c=None, batch=4, temperature=1.0, top_k=0, top_p=1.0, min_p=0.0, fast=True):
+    def generate(self, c=None, batch=4, temperature=1.0, top_k=0, top_p=1.0, fast=True):
         if c is None:
             c = torch.randint(self.num_classes, (batch, 1), device=self.mamba.lm_head.weight.device)
         else:
@@ -74,7 +73,7 @@ class AiM(nn.Module):
 
         sos_tokens = self.encode_to_c(c)
         
-        tokens = self.sample_cfg(sos_tokens, temperature=temperature, top_k=top_k, top_p=top_p, min_p=min_p, fast=fast)[:batch]
+        tokens = self.sample_cfg(sos_tokens, temperature=temperature, top_k=top_k, top_p=top_p, fast=fast)[:batch]
         
         shape = (batch, self.num_embed_dim, int(tokens.shape[-1]**0.5), int(tokens.shape[-1]**0.5))
         imgs = self.decode_to_img(tokens, shape)

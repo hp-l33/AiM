@@ -41,7 +41,7 @@ def pil_loader(path):
     
 
 def build_dataset(data_path: str, final_reso: int = 256, hflip=False, mid_reso=1.125,
-                  valid_classes=None, train_split='train', val_split=None):
+                  valid_classes=None, train_split='train', val_split=None, norm=False):
     # build augmentations
     mid_reso = round(mid_reso * final_reso)  # first resize to mid_reso, then crop to final_reso
     train_aug = [
@@ -54,6 +54,9 @@ def build_dataset(data_path: str, final_reso: int = 256, hflip=False, mid_reso=1
         transforms.CenterCrop((final_reso, final_reso)),
         transforms.ToTensor(),
     ]
+    if norm:
+        train_aug.append(transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True))
+        valid_aug.append(transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True))
     if hflip:
         train_aug.insert(0, transforms.RandomHorizontalFlip())
         
