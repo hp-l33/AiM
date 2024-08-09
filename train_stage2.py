@@ -3,11 +3,10 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 import os
-os.umask(0o000)
 import argparse
 from omegaconf import OmegaConf
 from transformers import TrainingArguments
-from trainer import Stage2Trainer, ImageLogCallback, collate_fn
+from trainer import Stage2Trainer, collate_fn
 from util.helper import naming_experiment_with_time, instantiate_from_config
 
 
@@ -51,30 +50,29 @@ def create_training_arguments(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run-name", type=str, help="experiment name, named by the current time by default.")
+    parser.add_argument("--run-name", type=str, help="experiment name.")
     parser.add_argument("--output-dir", type=str, default='./checkpoints', help="output root directory. The full directory format is <output-dir/run-name>.")
     parser.add_argument("--result-dir", type=str, default='./results', help="result root directory. The full directory format is <results-dir/run-name>.")
-    parser.add_argument("--resume-dir", type=str, help="checkpoint directory")
-    parser.add_argument("--checkpoint", type=str, help="checkpoint directory")
+    parser.add_argument("--resume-dir", type=str, help="resume directory")
+    parser.add_argument("--checkpoint", type=str, help="checkpoint path")
     # train parameters
     parser.add_argument("--epochs", type=int, default=300, help="total epochs")
-    parser.add_argument("--batch-size", type=int, default=16, help="batch size")
+    parser.add_argument("--batch-size", type=int, default=64, help="batch size")
     parser.add_argument("--num-workers", type=int, default=24, help="dataloader num workers")
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--min-lr", type=float, default=None, help="min learning rate")
     parser.add_argument("--decay", type=float, default=0.05, help="weight decay")
     parser.add_argument("--beta1", type=float, default=0.9, help="adam beta1")
     parser.add_argument("--beta2", type=float, default=0.95, help="adam beta2")
-    parser.add_argument("--grad-accum", type=int, default=1, help="gradient_accumulation steps")
-    parser.add_argument("--warmup-ratio", type=float, default=0.0, help="gradient_accumulation steps")
-    parser.add_argument("--scheduler", type=str, default='linear', help="gradient_accumulation steps")
-    # save and log
+    parser.add_argument("--grad-accum", type=int, default=1, help="gradient accumulation steps")
+    parser.add_argument("--warmup-ratio", type=float, default=0.0, help="warmup ratio")
+    parser.add_argument("--scheduler", type=str, default='linear', choices=['linear', 'cosine_with_min_lr'], help="lr scheduler")
+    # save strategy
     parser.add_argument("--save-total-limit", type=int, default=1, help="save total limit")
     parser.add_argument("--save-strategy", type=str, default='steps', choices=['steps', 'epochs'], help="save strategy")
     parser.add_argument("--eval-strategy", type=str, default='no', choices=['no', 'steps', 'epochs'], help="eval strategy")
-    # parser.add_argument("--log-freq", type=int, default=10, help="frequency of logging images at the end of epochs")
     # config
-    parser.add_argument("--config", type=str, default='./config/vq_f8_mamba_330m.yaml', help="config path")
+    parser.add_argument("--config", type=str, help="config path")
     args = parser.parse_args()
 
     # setting output path

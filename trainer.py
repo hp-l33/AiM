@@ -48,34 +48,3 @@ class Stage2Trainer(Trainer):
         param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
         decay_parameters = [n for n, p in param_dict.items() if p.dim() >= 2]
         return decay_parameters
-
-
-class ImageLogCallback(TrainerCallback):
-    def __init__(self, log_dir, log_freq=10):
-        self.log_dir = log_dir
-        self.log_freq = log_freq
-
-    def log_img(self, model, epoch):
-        if hasattr(model, "log_images") and callable(model.log_images):
-            model.eval()
-            log = model.log_images(self.sample['inputs'], self.sample['labels'])
-            vutils.save_image(torch.cat([x for x in log.values()]),
-                              os.path.join(self.log_dir, f"sample_{epoch}.jpg"),
-                              nrow=self.sample['inputs'].shape[0])
-            model.train()
-
-    def on_train_begin(self, args, state, control, **kwargs):
-        self.sample = next(iter(kwargs['train_dataloader']))
-
-    def on_epoch_end(self, args, state, control, **kwargs):
-        if state.is_local_process_zero and state.epoch % self.log_freq == 0:
-            self.log_img(kwargs['model'], state.epoch)
-
-        if state.epoch % 50 == 0 or state.epoch == 1:
-            try:
-                output_dir = f"{args.output_dir}/checkpoint-{int(state.epoch)}"
-                kwargs['model'].save_pretrained(output_dir)
-                # torch.save(kwargs['model'].state_dcit(), output_dir+"model.pth")
-                print(f"saved at {output_dir}")
-            except:
-                print("save failed")
