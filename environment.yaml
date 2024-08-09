@@ -1,4 +1,4 @@
-name: mamba
+name: aim
 channels:
   - pytorch
   - nvidia
@@ -176,4 +176,3 @@ dependencies:
       - tqdm==4.66.4
       - transformers==4.40.2
       - wandb==0.17.0
-prefix: /home/ubuntu001/anaconda3/envs/mamba
