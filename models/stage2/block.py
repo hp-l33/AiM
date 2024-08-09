@@ -17,7 +17,7 @@ def modulate(x, shift, scale):
 class Block(nn.Module):
     def __init__(
         self, dim, mixer_cls, mlp_cls, norm_cls=nn.LayerNorm, fused_add_norm=False,
-        residual_in_fp32=False, adaln_single=False, mixer_drop=0.0, mlp_drop=0.0
+        residual_in_fp32=False, adaln_group=False, mixer_drop=0.0, mlp_drop=0.0
     ):
         """
         Simple block wrapping a mixer class with LayerNorm/RMSNorm and residual connection"
@@ -39,7 +39,7 @@ class Block(nn.Module):
 
         # modify
         self.mixer_dropout = nn.Dropout(mixer_drop)
-        self.adaln_single = adaln_single    # adaLN single
+        self.adaln_group = adaln_group    # adaLN single
         self.adaln_factor = 3   # alpha, beta, gamma for label embedding
 
         if mlp_cls is not nn.Identity:
@@ -56,7 +56,7 @@ class Block(nn.Module):
             ), "Only LayerNorm and RMSNorm are supported for fused_add_norm"
         
         # adaLN
-        if adaln_single:
+        if adaln_group:
             self.scale_shift_table = nn.Parameter(torch.randn(1, self.adaln_factor, dim) / dim**0.5)
         else:
             self.adaLN_modulation = nn.Sequential(
@@ -93,7 +93,7 @@ class Block(nn.Module):
                 is_rms_norm=isinstance(self.norm, RMSNorm)
             )
         # adaLN
-        if self.adaln_single:
+        if self.adaln_group:
             scale_shift_params = (self.scale_shift_table + cls_embed).unbind(1)
         else:
             scale_shift_params = self.adaLN_modulation(cls_embed).chunk(self.adaln_factor, dim=1)

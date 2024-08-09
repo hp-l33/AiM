@@ -15,10 +15,13 @@ class MambaConfig:
     fused_add_norm: bool = True
     pad_vocab_size_multiple: int = 8
     tie_embeddings: bool = True
+    # update
     num_classes: int = 1000
     num_img_tokens: int = 256
+    # adaLN
     adaln_group: bool = True
     n_groups: int = 4
+    # dropout
     token_drop: float = 0.0
     mixer_drop: float = 0.0
     mlp_drop: float = 0.0
