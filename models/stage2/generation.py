@@ -84,41 +84,66 @@ def modify_logit_for_repetition_penalty(logits, prev_output_tokens, repetition_p
     return logits
 
 
+# def sample(logits, top_k=1, top_p=0.0, min_p=0.0, temperature=1.0):
+#     """Sample from top-k logits.
+#     Arguments:
+#         logits: Tensor of shape (batch_size, vocab_size)
+#     """
+#     if top_k == 1:  # Short-circuit for greedy decoding
+#         return logits.argmax(dim=-1)
+#     else:
+#         if top_p > 0.0:
+#             assert top_p <= 1.0, "top-p should be in (0, 1]."
+#         if top_k > 0:
+#             top_k = min(top_k, logits.size(-1))  # Safety check
+#             logits_top, indices = torch.topk(logits, top_k, dim=-1)
+#             if temperature != 1.0:
+#                 logits_top /= temperature
+#             modify_logits_for_top_p_filtering(logits_top, top_p)
+#             return indices[
+#                 torch.arange(indices.shape[0], device=indices.device),
+#                 torch.multinomial(torch.softmax(logits_top, dim=-1), num_samples=1).squeeze(dim=-1),
+#             ]
+#         else:
+#             if min_p > 0.0:
+#                 logits_top = logits.clone()
+#                 max_prob, _ = (torch.softmax(logits_top, dim=-1)).max(dim=-1, keepdim=True)
+#                 min_prob = max_prob * min_p
+#                 modify_logits_for_min_p_filtering(logits_top, min_prob)
+#                 if temperature != 1.0:
+#                     logits_top /= temperature
+#                 return torch.multinomial(torch.softmax(logits_top, dim=-1), num_samples=1).squeeze(dim=-1)
+#             # Clone so that when we modify for top_p we don't change the original logits
+#             logits_top = logits / temperature if temperature != 1.0 else logits.clone()
+#             modify_logits_for_top_p_filtering(logits_top, top_p)
+#             return torch.multinomial(torch.softmax(logits_top, dim=-1), num_samples=1).squeeze(
+#                 dim=-1
+#             )
+
 def sample(logits, top_k=1, top_p=0.0, min_p=0.0, temperature=1.0):
     """Sample from top-k logits.
     Arguments:
         logits: Tensor of shape (batch_size, vocab_size)
     """
-    if top_k == 1:  # Short-circuit for greedy decoding
-        return logits.argmax(dim=-1)
-    else:
-        if top_p > 0.0:
-            assert top_p <= 1.0, "top-p should be in (0, 1]."
-        if top_k > 0:
-            top_k = min(top_k, logits.size(-1))  # Safety check
-            logits_top, indices = torch.topk(logits, top_k, dim=-1)
-            if temperature != 1.0:
-                logits_top /= temperature
-            modify_logits_for_top_p_filtering(logits_top, top_p)
-            return indices[
-                torch.arange(indices.shape[0], device=indices.device),
-                torch.multinomial(torch.softmax(logits_top, dim=-1), num_samples=1).squeeze(dim=-1),
-            ]
-        else:
-            if min_p > 0.0:
-                logits_top = logits.clone()
-                max_prob, _ = (torch.softmax(logits_top, dim=-1)).max(dim=-1, keepdim=True)
-                min_prob = max_prob * min_p
-                modify_logits_for_min_p_filtering(logits_top, min_prob)
-                if temperature != 1.0:
-                    logits_top /= temperature
-                return torch.multinomial(torch.softmax(logits_top, dim=-1), num_samples=1).squeeze(dim=-1)
-            # Clone so that when we modify for top_p we don't change the original logits
-            logits_top = logits / temperature if temperature != 1.0 else logits.clone()
-            modify_logits_for_top_p_filtering(logits_top, top_p)
-            return torch.multinomial(torch.softmax(logits_top, dim=-1), num_samples=1).squeeze(
-                dim=-1
-            )
+    assert top_p <= 1.0 and top_p > 0, "top-p should be in (0, 1]."
+    
+    if top_k > 0:
+        top_k = min(top_k, logits.size(-1))  # Safety check
+        indices_to_remove = logits < torch.topk(logits, top_k)[0][..., -1, None]
+        logits.masked_fill_(indices_to_remove, float("-Inf"))
+    
+    if top_p < 1.0:
+        sorted_logits, sorted_indices = torch.sort(logits, descending=False)
+        cumulative_probs = sorted_logits.softmax(dim=-1).cumsum(dim=-1)
+        sorted_indices_to_remove = cumulative_probs <= (1 - top_p)
+        sorted_indices_to_remove[..., -1:] = False
+        indices_to_remove = sorted_indices_to_remove.scatter(
+            sorted_indices.ndim - 1, sorted_indices, sorted_indices_to_remove
+        )
+        logits.masked_fill_(indices_to_remove, float("-inf"))
+
+    return torch.multinomial(torch.softmax(logits, dim=-1), num_samples=1).squeeze(dim=-1)
+
 
 
 @torch.inference_mode()
