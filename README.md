@@ -2,8 +2,8 @@
 
 <div align="center">
 
-[![arXiv](https://img.shields.io/badge/arXiv-2024.0814-b31b1b.svg)](https://arxiv.org/abs/)&nbsp;
-[![project page](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/hp-l33/aim)&nbsp;
+[![arXiv](https://img.shields.io/badge/arXiv%20paper-2024.0814-b31b1b.svg)](https://arxiv.org/abs/)&nbsp;
+[![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/hp-l33/aim)&nbsp;
 
 </div>
 
@@ -34,4 +34,10 @@ train_stage2.py \
 ```
 
 ## Model Zoo
-We will release the model weights soon
+The model weights can be downloaded from the HuggingFace below or Baidu Cloud.
+Model | params | FID | weight 
+--- |:---:|:---:|:---:|
+AiM-B   | 148M | 3.52 | [aim_b.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_b.bin)
+AiM-L   | 350M | 2.83 | [aim_l.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_l.bin)
+AiM-XL  | 763M | 2.56 | Coming soon
+AiM-1B  | 1.3B | 2.21 | Coming soon
