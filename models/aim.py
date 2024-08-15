@@ -8,8 +8,8 @@ from .stage2.mixer_seq_simple import MambaLMHeadModel
 class AiM(nn.Module):
     def __init__(self, stage1_config, stage2_config):
         super().__init__()
-        self.num_classes = stage1_config.params.num_classes
-        self.num_img_tokens = stage1_config.params.num_img_tokens
+        self.num_classes = stage2_config.params.num_classes
+        self.num_img_tokens = stage2_config.params.num_img_tokens
         self.num_embed_dim = stage1_config.params.embed_dim
         
         # init all models
@@ -105,12 +105,22 @@ class AiM(nn.Module):
                 ckpt[new_key] = ckpt.pop(key)
             if self.vqvae is None and 'vqvae' in key:
                 ckpt.pop(key)
+            if 'shared_adaln' in key:
+                r = self.mamba.backbone.adaln_group[1].weight.shape[0]
+                w = ckpt.pop(key)
+                print(w.shape, r)
+                if len(w.shape) > 1:
+                    ckpt[key] = w.repeat(r // w.shape[0], 1)
+                else:
+                    ckpt[key] = w.repeat(r // w.shape[0])
             if 'shared' in key:
-                new_key = key.replace("shared_adaln", "adaln_single")
+                new_key = key.replace("shared_adaln", "adaln_group")
                 ckpt[new_key] = ckpt.pop(key)
+                print("shared_adaln -> adaln_group")
             if 'adaln_single' in key:
                 new_key = key.replace("adaln_single", "adaln_group")
                 ckpt[new_key] = ckpt.pop(key)
+                print("adaln_single -> adaln_group")
             if 'para' in key:
                 new_key = key.replace("adaLN_parameters", "scale_shift_table")
                 ckpt[new_key] = ckpt.pop(key)

@@ -201,7 +201,7 @@ def create_block(
         norm_cls=norm_cls,
         fused_add_norm=fused_add_norm,
         residual_in_fp32=residual_in_fp32,
-        adaln_single=adaln_single,
+        adaln_group=adaln_group,
     )
     block.layer_idx = layer_idx
     return block
@@ -351,7 +351,7 @@ class MixerModel(nn.Module):
         ada_cond = self.adaln_group(cond_embed).chunk(self.n_groups, dim=1)
         
         residual = None
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             hidden_states, residual = layer(
                 hidden_states, residual, ada_cond[i % self.n_groups], inference_params=inference_params
             )
