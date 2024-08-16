@@ -256,9 +256,9 @@ class MixerModel(nn.Module):
         fused_add_norm=False,
         residual_in_fp32=False,
         num_classes=1000,
-        num_img_tokens=256,
+        num_tokens=256,
         adaln_group=False,
-        n_groups=4,
+        num_groups=4,
         token_drop=0.0,
         mixer_drop=0.0,
         mlp_drop=0.0,
@@ -269,17 +269,21 @@ class MixerModel(nn.Module):
         super().__init__()
         self.residual_in_fp32 = residual_in_fp32
 
-        self.embeddings = GPT2Embeddings(d_model, vocab_size, num_img_tokens+1, token_drop=token_drop, **factory_kwargs)
+        self.embeddings = GPT2Embeddings(d_model, vocab_size, num_tokens+1, token_drop=token_drop, **factory_kwargs)
         self.cls_embed = LabelEmbedder(num_classes=num_classes, hidden_size=d_model)
         
         adaln_factor = 3 + (3 if d_intermediate != 0 else 0)    # double for MLP
-        self.n_groups = n_groups
 
         # adaLN-group
-        self.adaln_group = nn.Sequential(
-            nn.SiLU(inplace=False),
-            GroupAdaLN(d_model, n_groups * adaln_factor * d_model, num_channels=n_groups * adaln_factor)
-        ) if adaln_group else nn.Identity()
+        if adaln_group:
+            self.adaln_group = nn.Sequential(
+                nn.SiLU(inplace=False),
+                GroupAdaLN(d_model, num_groups * adaln_factor * d_model, num_channels=num_groups * adaln_factor)
+            )
+            self.num_groups = num_groups
+        else:
+            self.adaln_group = nn.Identity()
+            self.num_groups = 1
 
         self.final_layer = FinalLayer(d_model)  # finel adaLN before lm_heads
 
@@ -348,12 +352,12 @@ class MixerModel(nn.Module):
             else:
                 hidden_states = self.embeddings(input_ids, position_ids=position_ids)
 
-        ada_cond = self.adaln_group(cond_embed).chunk(self.n_groups, dim=1)
+        ada_cond = self.adaln_group(cond_embed).chunk(self.num_groups, dim=1)
         
         residual = None
         for i, layer in enumerate(self.layers):
             hidden_states, residual = layer(
-                hidden_states, residual, ada_cond[i % self.n_groups], inference_params=inference_params
+                hidden_states, residual, ada_cond[i % self.num_groups], inference_params=inference_params
             )
         if not self.fused_add_norm:
             residual = (hidden_states + residual) if residual is not None else hidden_states
@@ -403,9 +407,9 @@ class MambaLMHeadModel(nn.Module, GenerationMixin):
             fused_add_norm=config.fused_add_norm,
             residual_in_fp32=config.residual_in_fp32,
             num_classes=config.num_classes,
-            num_img_tokens=config.num_img_tokens,
+            num_tokens=config.num_tokens,
             adaln_group=config.adaln_group,
-            n_groups=config.n_groups,
+            num_groups=config.num_groups,
             token_drop=config.token_drop,
             mixer_drop=config.mixer_drop,
             mlp_drop=config.mlp_drop,

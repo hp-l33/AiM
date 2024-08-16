@@ -1,34 +1,43 @@
 # Reference:
 #   VQGAN: https://github.com/CompVis/taming-transformers
 #   MaskGit: https://github.com/google-research/maskgit
+#   LlamaGen: https://github.com/FoundationVision/LlamaGen
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from dataclasses import dataclass, field
+from typing import List
+
+
+@dataclass
+class VQConfig:
+    n_embed: int = 16384
+    embed_dim: int = 8
+    
+    z_channels: int = 256
+    in_channels: int = 3
+    out_channels: int = 3
+    
+    ch: int = 128,
+    ch_mult: List[int] = field(default_factory=lambda: [1, 1, 2, 2, 4])
+    num_res_blocks: int = 2
+    attn_resolutions: List[int] = field(default_factory=lambda: [16])
+
 
 class VQModel(nn.Module):
-    def __init__(self, 
-                 ddconfig,
-                 n_embed,
-                 embed_dim,
-                 ckpt_path=None,
-                 test_mode=True,):
+    def __init__(self, config: VQConfig):
         super().__init__()
-        self.encoder = Encoder(ch_mult=ddconfig.ch_mult, z_channels=ddconfig.z_channels, dropout=ddconfig.dropout)
-        self.decoder = Decoder(ch_mult=ddconfig.ch_mult, z_channels=ddconfig.z_channels, dropout=ddconfig.dropout)
+        self.config = config
+        
+        self.encoder = Encoder(ch_mult=config.ch_mult, z_channels=config.z_channels, num_res_blocks=config.num_res_blocks)
+        self.decoder = Decoder(ch_mult=config.ch_mult, z_channels=config.z_channels, num_res_blocks=config.num_res_blocks)
 
-        self.quantize = VectorQuantizer(n_embed, embed_dim, 0.25, 0.0, True, True)
-        self.quant_conv = nn.Conv2d(ddconfig.z_channels, embed_dim, 1)
-        self.post_quant_conv = nn.Conv2d(embed_dim, ddconfig.z_channels, 1)
-
-        if ckpt_path is not None:
-            self.from_pretrained(ckpt_path)
-            
-        if test_mode:
-            self.eval()
-            [p.requires_grad_(False) for p in self.parameters()]
-
+        self.quantize = VectorQuantizer(config.n_embed, config.embed_dim, 0.25, 0.0, True, True)
+        self.quant_conv = nn.Conv2d(config.z_channels, config.embed_dim, 1)
+        self.post_quant_conv = nn.Conv2d(config.embed_dim, config.z_channels, 1)
+        
     def encode(self, x):
         h = self.encoder(x)
         h = self.quant_conv(h)
@@ -117,7 +126,6 @@ class Encoder(nn.Module):
         h = nonlinearity(h)
         h = self.conv_out(h)
         return h
-
 
 
 class Decoder(nn.Module):
@@ -405,3 +413,10 @@ def compute_entropy_loss(affinity, loss_type="softmax", temperature=0.01):
     sample_entropy = - torch.mean(torch.sum(target_probs * log_probs, dim=-1))
     loss = sample_entropy - avg_entropy
     return loss
+
+
+def VQ_f16(**kwargs):
+    return VQModel(VQConfig())
+
+
+VQ_models = {'VQ-f16': VQ_f16}

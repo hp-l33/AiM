@@ -39,8 +39,8 @@ class Block(nn.Module):
 
         # modify
         self.mixer_dropout = nn.Dropout(mixer_drop)
-        self.adaln_group = adaln_group    # adaLN single
-        self.adaln_factor = 3   # alpha, beta, gamma for label embedding
+        self.adaln_group = adaln_group
+        self.adaln_factor = 3   # alpha, beta, gamma
 
         if mlp_cls is not nn.Identity:
             self.norm2 = norm_cls(dim)
