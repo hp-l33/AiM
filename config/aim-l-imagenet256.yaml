@@ -7,8 +7,6 @@ model:
         vocab_size: 16384
         d_model: 1024
         n_layer: 48
-        ssm_cfg:
-          layer: Mamba2
         d_intermediate: 0
         num_classes: 1000
         num_img_tokens: 256

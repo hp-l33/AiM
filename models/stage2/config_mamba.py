@@ -7,7 +7,7 @@ class MambaConfig:
     d_intermediate: int = 0
     n_layer: int = 48
     vocab_size: int = 16384
-    ssm_cfg: dict = field(default_factory=dict)
+    ssm_cfg: dict = field(default_factory=lambda: {'layer': 'Mamba2'})
     attn_layer_idx: list = field(default_factory=list)
     attn_cfg: dict = field(default_factory=dict)
     rms_norm: bool = True
