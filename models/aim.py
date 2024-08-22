@@ -95,42 +95,7 @@ class AiM(nn.Module):
     def decode_to_img(self, index, z_shape):
         x = self.vqvae.decode_code(index, shape=z_shape)
         return x
-    
-    # delete it when release
-    def from_pretrained(self, ckpt_path):
-        ckpt = torch.load(ckpt_path, map_location="cpu")
-        ckpt = ckpt['state_dict'] if 'state_dict' in ckpt else ckpt
-        for key in list(ckpt):
-            if 'vq_vae' in key:
-                new_key = 'vqvae.' + '.'.join(key.split('.')[1:])
-                ckpt[new_key] = ckpt.pop(key)
-            if self.vqvae is None and 'vqvae' in key:
-                ckpt.pop(key)
-            if 'shared_adaln' in key:
-                r = self.mamba.backbone.adaln_group[1].weight.shape[0]
-                w = ckpt.pop(key)
-                print(w.shape, r)
-                if len(w.shape) > 1:
-                    ckpt[key] = w.repeat(r // w.shape[0], 1)
-                else:
-                    ckpt[key] = w.repeat(r // w.shape[0])
-            if 'shared' in key:
-                new_key = key.replace("shared_adaln", "adaln_group")
-                ckpt[new_key] = ckpt.pop(key)
-                print("shared_adaln -> adaln_group")
-            if 'adaln_single' in key:
-                new_key = key.replace("adaln_single", "adaln_group")
-                ckpt[new_key] = ckpt.pop(key)
-                print("adaln_single -> adaln_group")
-            if 'para' in key:
-                new_key = key.replace("adaLN_parameters", "scale_shift_table")
-                ckpt[new_key] = ckpt.pop(key)
-            if 'position_embeddings' in key:
-                ckpt[key] = (ckpt.pop(key))[:self.num_tokens+1:]
-
-        self.load_state_dict(ckpt, strict=False)
-        print(f"Restored from {ckpt_path}")
-    
+     
     
 def AiM_B(**kwargs):
     return AiM(MambaConfig(d_model=768, n_layer=24, adaln_group=False, **kwargs))
