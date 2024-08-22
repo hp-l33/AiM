@@ -29,11 +29,6 @@ class AiM(nn.Module):
     def init_2nd_stage_model(self, config):
         model = MambaLMHeadModel(config)
         return model
-    
-    @torch.no_grad()
-    def warmup_model(self):
-        _ = self.sample_cfg(torch.randint(self.num_classes, (1, 1), device=self.mamba.lm_head.weight.device),
-                            max_length=2)
 
     def get_num_params(self, non_embedding=False):
         n_params = sum(p.numel() for p in self.mamba.parameters())
@@ -53,13 +48,11 @@ class AiM(nn.Module):
         return logits, target
 
     @torch.no_grad()
-    def sample_cfg(self, sos_token, max_length=None, temperature=1.0, top_k=0, top_p=1.0, fast=True):
+    def sample_cfg(self, sos_token, temperature=1.0, top_k=0, top_p=1.0, fast=True):
         # classifier free guidance
         sos_token = torch.cat([sos_token, torch.full_like(sos_token, self.num_classes)])
 
-        if max_length is None:
-            max_length = self.num_tokens + sos_token.shape[1]
-            
+        max_length = self.num_tokens + sos_token.shape[1]
         x = self.mamba.generate(input_ids=sos_token,
                                 cond=sos_token,
                                 max_length=max_length,
