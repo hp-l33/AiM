@@ -29,6 +29,11 @@ class AiM(nn.Module):
     def init_2nd_stage_model(self, config):
         model = MambaLMHeadModel(config)
         return model
+    
+    @torch.no_grad()
+    def warmup_model(self):
+        _ = self.sample_cfg(torch.randint(self.num_classes, (1, 1), device=self.mamba.lm_head.weight.device),
+                            max_length=2)
 
     def get_num_params(self, non_embedding=False):
         n_params = sum(p.numel() for p in self.mamba.parameters())
@@ -48,11 +53,13 @@ class AiM(nn.Module):
         return logits, target
 
     @torch.no_grad()
-    def sample_cfg(self, sos_token, temperature=1.0, top_k=0, top_p=1.0, fast=True):
+    def sample_cfg(self, sos_token, max_length=None, temperature=1.0, top_k=0, top_p=1.0, fast=True):
         # classifier free guidance
         sos_token = torch.cat([sos_token, torch.full_like(sos_token, self.num_classes)])
 
-        max_length = self.num_tokens + sos_token.shape[1]
+        if max_length is None:
+            max_length = self.num_tokens + sos_token.shape[1]
+            
         x = self.mamba.generate(input_ids=sos_token,
                                 cond=sos_token,
                                 max_length=max_length,
@@ -65,14 +72,14 @@ class AiM(nn.Module):
         return x[:, 1:]
     
     @torch.no_grad()
-    def generate(self, c=None, batch=4, temperature=1.0, top_k=0, top_p=1.0, fast=True):
+    def generate(self, c=None, batch=4, temperature=1.0, top_k=0, top_p=1.0, cfg_scale=5.0, fast=True):
         if c is None:
             c = torch.randint(self.num_classes, (batch, 1), device=self.mamba.lm_head.weight.device)
         else:
             batch = c.shape[0]
 
+        self.mamba.cfg_scale = cfg_scale
         sos_tokens = self.encode_to_c(c)
-        
         tokens = self.sample_cfg(sos_tokens, temperature=temperature, top_k=top_k, top_p=top_p, fast=fast)[:batch]
         
         shape = (batch, self.num_embed_dim, int(tokens.shape[-1]**0.5), int(tokens.shape[-1]**0.5))
