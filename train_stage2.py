@@ -4,22 +4,11 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 import os
 import argparse
-from omegaconf import OmegaConf
+from datetime import datetime
 from transformers import TrainingArguments
 from trainer import Stage2Trainer, collate_fn
-from util.helper import naming_experiment_with_time, instantiate_from_config
-
-
-def create_model(config):
-    model_config = config['model'] if 'model' in config else config
-    model = instantiate_from_config(model_config)
-    return model
-
-
-def create_datasets(config):
-    data_config = config['data'] if 'data' in config else config
-    train_data, eval_data = instantiate_from_config(data_config)
-    return train_data, eval_data
+from models.aim import AiM_models
+from util.data import build_dataset
 
 
 def create_training_arguments(args):
@@ -50,12 +39,14 @@ def create_training_arguments(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run-name", type=str, help="experiment name.")
-    parser.add_argument("--output-dir", type=str, default='./checkpoints', help="output root directory. The full directory format is <output-dir/run-name>.")
-    parser.add_argument("--result-dir", type=str, default='./results', help="result root directory. The full directory format is <results-dir/run-name>.")
+    parser.add_argument("--aim-model", type=str, choices=["AiM-B", "AiM-L", "AiM-XL", "AiM-1B"], help="AiM models")
+    parser.add_argument("--aim-ckpt", type=str, default=None, help="checkpoint path")
+    parser.add_argument("--vq-model", type=str, default="VQ-f16", choices=["VQ-f16"], help="VQ models")
+    parser.add_argument("--vq-ckpt", type=str, help="checkpoint path")
+    parser.add_argument("--dataset", type=str, help="dataset path")
+    parser.add_argument("--output-dir", type=str, default='./checkpoints', help="output root directory")
     parser.add_argument("--resume-dir", type=str, help="resume directory")
-    parser.add_argument("--checkpoint", type=str, help="checkpoint path")
-    # train parameters
+    
     parser.add_argument("--epochs", type=int, default=300, help="total epochs")
     parser.add_argument("--batch-size", type=int, default=64, help="batch size")
     parser.add_argument("--num-workers", type=int, default=24, help="dataloader num workers")
@@ -65,27 +56,26 @@ if __name__ == "__main__":
     parser.add_argument("--beta1", type=float, default=0.9, help="adam beta1")
     parser.add_argument("--beta2", type=float, default=0.95, help="adam beta2")
     parser.add_argument("--grad-accum", type=int, default=1, help="gradient accumulation steps")
-    parser.add_argument("--warmup-ratio", type=float, default=0.0, help="warmup ratio")
+    parser.add_argument("--warmup", type=float, default=0.0, help="warmup ratio")
     parser.add_argument("--scheduler", type=str, default='linear', choices=['linear', 'cosine_with_min_lr'], help="lr scheduler")
-    # save strategy
+
     parser.add_argument("--save-total-limit", type=int, default=1, help="save total limit")
     parser.add_argument("--save-strategy", type=str, default='steps', choices=['steps', 'epochs'], help="save strategy")
     parser.add_argument("--eval-strategy", type=str, default='no', choices=['no', 'steps', 'epochs'], help="eval strategy")
-    # config
-    parser.add_argument("--config", type=str, help="config path")
+
     args = parser.parse_args()
 
     # setting output path
-    if args.run_name is None:
-        args.run_name = naming_experiment_with_time()
-    args.output_dir = os.path.join(args.output_dir, args.run_name)
-    args.result_dir = os.path.join(args.result_dir, args.run_name)
-    os.makedirs(args.result_dir, exist_ok=True)
+    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    args.output_dir = os.path.join(args.output_dir, f"{args.aim_model}_{current_time}")
     
-    # create model and dataset from config
-    config = OmegaConf.load(args.config)
-    model = create_model(config)
-    train_data, eval_data = create_datasets(config)
+    # create model and dataset
+    model = AiM_models[args.aim_model]()
+    model.vqvae.load_state_dict(torch.load(args.vq_ckpt))
+    if args.aim_ckpt is not None:
+        model.mamba.load_state_dict(torch.load(args.aim_ckpt))
+        
+    train_data, eval_data = build_dataset(args.dataset, norm=True)
 
     # create trainer and run
     trainer = Stage2Trainer(
