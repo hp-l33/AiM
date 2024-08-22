@@ -51,7 +51,7 @@ AiM-L   | 350M | 2.83 | [aim_l.bin](https://huggingface.co/hp-l33/aim/resolve/ma
 AiM-XL  | 763M | 2.56 | [aim_xl.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_xl.bin)
 
 ## 🌹 Acknowledgments
-This project would not have been possible without the computational resources provided by Professor Guoqi Li. We would also like to thank the following repositories and papers for their inspiration:
+This project would not have been possible without the computational resources provided by Professor [Guoqi Li](https://casialiguoqi.github.io). We would also like to thank the following repositories and papers for their inspiration:
 * [VQGAN](https://github.com/CompVis/taming-transformers)
 * [Mamba](https://github.com/state-spaces/mamba)
 * [LlamaGen](https://github.com/FoundationVision/LlamaGen)
@@ -60,4 +60,4 @@ This project would not have been possible without the computational resources pr
 
 
 
-## BibTeX
+## 📖 BibTeX
