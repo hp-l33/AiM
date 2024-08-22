@@ -12,7 +12,9 @@
 <img src="figure/title.png" width=95%>
 <p>
 
-[AiM: Scalable Autoregressive Image Generation with Mamba]()
+<p align="center" style="font-size: larger;">
+  <a href="https://arxiv.org/">Scalable Autoregressive Image Generation with Mamba</a>
+</p>
 
 ## What is AiM
 The first, as far as we know, autoregressive image generation model based on Mamba 🐍, offering competitive generation quality 💪 with diffusion models and faster inference speed ⚡️.
@@ -47,3 +49,15 @@ Model | params | FID | weight
 AiM-B   | 148M | 3.52 | [aim_b.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_b.bin)
 AiM-L   | 350M | 2.83 | [aim_l.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_l.bin)
 AiM-XL  | 763M | 2.56 | [aim_xl.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_xl.bin)
+
+## Acknowledgments
+This project would not have been possible without the computational resources provided by Professor Guoqi Li. We would also like to thank the following repositories and papers for their inspiration:
+* [VQGAN](https://github.com/CompVis/taming-transformers)
+* [Mamba](https://github.com/state-spaces/mamba)
+* [LlamaGen](https://github.com/FoundationVision/LlamaGen)
+* [VAR](https://github.com/FoundationVision/VAR)
+* [DiT](https://github.com/facebookresearch/DiT)
+
+
+
+## BibTeX
