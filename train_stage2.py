@@ -3,6 +3,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 import os
+import torch
 import argparse
 from datetime import datetime
 from transformers import TrainingArguments

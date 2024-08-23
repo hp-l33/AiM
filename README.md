@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![arXiv](https://img.shields.io/badge/arXiv-2024.0814-b31b1b.svg)](https://arxiv.org/abs/)&nbsp;
+[![arXiv](https://img.shields.io/badge/arXiv-2408.12245-b31b1b.svg)](https://arxiv.org/abs/2408.12245)&nbsp;
 [![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/hp-l33/aim)&nbsp;
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1SS1GxzWSRNuvhbqkG9P0oKK3jSiUZHvK#scrollTo=erfdc0bzCk7d)
 
@@ -13,13 +13,13 @@
 <p>
 
 <p align="center" style="font-size: larger;">
-  <a href="https://arxiv.org/">Scalable Autoregressive Image Generation with Mamba</a>
+  <a href="https://arxiv.org/abs/2408.12245">Scalable Autoregressive Image Generation with Mamba</a>
 </p>
 
 ## 💡 What is AiM
-The first, as far as we know, autoregressive image generation model based on Mamba 🐍, offering competitive generation quality 💪 with diffusion models and faster inference speed ⚡️.
+The first (as far as we know) Mamba 🐍 based autoregressive image generation model, offering competitive generation quality 💪 with diffusion models and faster inference speed ⚡️.
 
-We also propose a more general form of adaLN, called **adaLN-group**, which balances parameter count and performance. Notably, adaLN-group can be flexibly converted to adaLN and adaLN-single equivalently.
+We also propose a more general form of adaLN, called **adaLN-group**, which balances parameter count and performance ⚖️. Notably, adaLN-group can be flexibly converted to adaLN and adaLN-single equivalently.
 
 
 ## 🔔 Update
@@ -51,7 +51,7 @@ AiM-L   | 350M | 2.83 | [aim_l.bin](https://huggingface.co/hp-l33/aim/resolve/ma
 AiM-XL  | 763M | 2.56 | [aim_xl.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_xl.bin)
 
 ## 🌹 Acknowledgments
-This project would not have been possible without the computational resources provided by Professor [Guoqi Li](https://casialiguoqi.github.io). We would also like to thank the following repositories and papers for their inspiration:
+This project would not have been possible without the computational resources provided by Professor [Guoqi Li](https://casialiguoqi.github.io) and his team. We would also like to thank the following repositories and papers for their inspiration:
 * [VQGAN](https://github.com/CompVis/taming-transformers)
 * [Mamba](https://github.com/state-spaces/mamba)
 * [LlamaGen](https://github.com/FoundationVision/LlamaGen)
@@ -61,3 +61,14 @@ This project would not have been possible without the computational resources pr
 
 
 ## 📖 BibTeX
+```
+@misc{li2024scalableautoregressiveimagegeneration,
+      title={Scalable Autoregressive Image Generation with Mamba}, 
+      author={Haopeng Li and Jinyue Yang and Kexin Wang and Xuerui Qiu and Yuhong Chou and Xin Li and Guoqi Li},
+      year={2024},
+      eprint={2408.12245},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2408.12245}, 
+}
+```
