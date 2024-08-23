@@ -23,7 +23,8 @@ We also propose a more general form of adaLN, called **adaLN-group**, which bala
 
 
 ## 🔔 Update
-* [2040-08-23] Code and Model Release
+* [2024-08-23] A minor bug in ``train_stage2.py`` has been fixed.
+* [2024-08-23] Code and Model Release.
 
 
 ## 🚀 Getting Started
