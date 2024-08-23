@@ -4,7 +4,7 @@
 
 [![arXiv](https://img.shields.io/badge/arXiv-2408.12245-b31b1b.svg)](https://arxiv.org/abs/2408.12245)&nbsp;
 [![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/hp-l33/aim)&nbsp;
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1SS1GxzWSRNuvhbqkG9P0oKK3jSiUZHvK#scrollTo=erfdc0bzCk7d)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1SS1GxzWSRNuvhbqkG9P0oKK3jSiUZHvK?usp=sharing)
 
 </div>
 
@@ -35,7 +35,7 @@ accelerate launch --num_processes=32 --num_machines=... --main_process_ip=... --
 ```
 
 ### Inference
-You can play with AiM in the [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]() or:
+You can play with AiM in the [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1SS1GxzWSRNuvhbqkG9P0oKK3jSiUZHvK?usp=sharing) or:
 ```
 imgs = model.generate(batch=8, temperature=1, top_p=0.98, top_k=600, cfg_scale=5)
 ```
