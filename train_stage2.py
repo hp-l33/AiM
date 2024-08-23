@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--beta1", type=float, default=0.9, help="adam beta1")
     parser.add_argument("--beta2", type=float, default=0.95, help="adam beta2")
     parser.add_argument("--grad-accum", type=int, default=1, help="gradient accumulation steps")
-    parser.add_argument("--warmup", type=float, default=0.0, help="warmup ratio")
+    parser.add_argument("--warmup-ratio", type=float, default=0.0, help="warmup ratio")
     parser.add_argument("--scheduler", type=str, default='linear', choices=['linear', 'cosine_with_min_lr'], help="lr scheduler")
 
     parser.add_argument("--save-total-limit", type=int, default=1, help="save total limit")
