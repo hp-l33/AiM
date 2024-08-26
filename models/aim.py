@@ -5,8 +5,10 @@ from .stage2.config_mamba import MambaConfig
 from .stage2.mixer_seq_simple import MambaLMHeadModel
 from .stage1.vq_model import VQ_models
 
+from huggingface_hub import PyTorchModelHubMixin
 
-class AiM(nn.Module):
+
+class AiM(nn.Module, PyTorchModelHubMixin, repo_url="https://github.com/hp-l33/AiM", pipeline_tag="unconditional-image-generation", license="mit"):
     def __init__(self, config: MambaConfig):
         super().__init__()
         # init all models
