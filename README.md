@@ -3,7 +3,7 @@
 <div align="center">
 
 [![arXiv](https://img.shields.io/badge/arXiv-2408.12245-b31b1b.svg)](https://arxiv.org/abs/2408.12245)&nbsp;
-[![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/hp-l33/aim)&nbsp;
+[![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/collections/hp-l33/aim-66cd87744764acddd30ce80a)&nbsp;
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1rrulJmMDTi3dJrgHGhzeEjbS4pOnZ5vV?usp=sharing)
 
 </div>
@@ -50,12 +50,15 @@ The first time Mamba runs, it will invoke the triton compiler and autotune, so i
 > https://github.com/state-spaces/mamba/issues/389#issuecomment-2171755306
 
 ## 🤗 Model Zoo
-The model weights can be downloaded from the [![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/hp-l33/aim).
+The model weights can be downloaded from the [![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/collections/hp-l33/aim-66cd87744764acddd30ce80a).
+
+
 Model | params | FID | weight 
 --- |:---:|:---:|:---:|
-AiM-B   | 148M | 3.52 | [aim_b.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_b.bin)
-AiM-L   | 350M | 2.83 | [aim_l.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_l.bin)
-AiM-XL  | 763M | 2.56 | [aim_xl.bin](https://huggingface.co/hp-l33/aim/resolve/main/aim_xl.bin)
+AiM-B   | 148M | 3.52 | [aim-base](https://huggingface.co/hp-l33/aim-base/resolve/main/model.safetensors)
+AiM-L   | 350M | 2.83 | [aim-large](https://huggingface.co/hp-l33/aim-large/resolve/main/model.safetensors)
+AiM-XL  | 763M | 2.56 | [aim-xlarge](https://huggingface.co/hp-l33/aim-xlarge/resolve/main/model.safetensors)
+
 
 ## 🌹 Acknowledgments
 This project would not have been possible without the computational resources provided by Professor [Guoqi Li](https://casialiguoqi.github.io) and his team. We would also like to thank the following repositories and papers for their inspiration:
