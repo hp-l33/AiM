@@ -55,9 +55,9 @@ The model weights can be downloaded from the [![weights](https://img.shields.io/
 
 Model | params | FID | weight 
 --- |:---:|:---:|:---:|
-AiM-B   | 148M | 3.52 | [aim-base](https://huggingface.co/hp-l33/aim-base/resolve/main/model.safetensors)
-AiM-L   | 350M | 2.83 | [aim-large](https://huggingface.co/hp-l33/aim-large/resolve/main/model.safetensors)
-AiM-XL  | 763M | 2.56 | [aim-xlarge](https://huggingface.co/hp-l33/aim-xlarge/resolve/main/model.safetensors)
+AiM-B   | 148M | 3.52 | [aim-base](https://huggingface.co/hp-l33/aim-base)
+AiM-L   | 350M | 2.83 | [aim-large](https://huggingface.co/hp-l33/aim-large)
+AiM-XL  | 763M | 2.56 | [aim-xlarge](https://huggingface.co/hp-l33/aim-xlarge)
 
 
 ## 🌹 Acknowledgments
