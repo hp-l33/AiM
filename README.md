@@ -46,7 +46,7 @@ model.eval()
 
 imgs = model.generate(batch=8, temperature=1, top_p=0.98, top_k=600, cfg_scale=5)
 ```
-The first time Mamba runs, it will invoke the triton compiler and autotune, so it may be slow. See:
+The first time Mamba runs, it will invoke the triton compiler and autotune, so it may be slow. From the second run onwards, the inference speed will be very fast. See:
 > https://github.com/state-spaces/mamba/issues/389#issuecomment-2171755306
 
 ## 🤗 Model Zoo
