@@ -41,7 +41,8 @@ You can play with AiM in the [![Open In Colab](https://colab.research.google.com
 ```
 from aim import AiM
 
-model = AiM.from_pretrained("hp-l33/aim-xlarge")
+model = AiM.from_pretrained("hp-l33/aim-xlarge").cuda()
+model.eval()
 
 imgs = model.generate(batch=8, temperature=1, top_p=0.98, top_k=600, cfg_scale=5)
 ```
