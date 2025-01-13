@@ -30,8 +30,7 @@ We also propose a more general form of adaLN, called **adaLN-group**, which bala
 
 ## 🚀 Getting Started
 ### Train
-
-
+Training AiM-B on 16 A800 GPUs takes approximately 16 hours. We also provide [wandb logs](https://api.wandb.ai/links/1370922505/tk5by16n) for reference.
 ```
 accelerate launch --num_processes=32 --num_machines=... --main_process_ip=... --main_process_port=... --machine_rank=... train_stage2.py --aim-model AiM-XL --dataset /your/data/path/ --vq-ckpt /your/ckpt/path/vq_f16.pt --batch-size 64 --lr 8e-4 --epochs 350
 ```
@@ -46,8 +45,9 @@ model.eval()
 
 imgs = model.generate(batch=8, temperature=1, top_p=0.98, top_k=600, cfg_scale=5)
 ```
-The first time Mamba runs, it will invoke the triton compiler and autotune, so it may be slow. From the second run onwards, the inference speed will be very fast. See:
-> https://github.com/state-spaces/mamba/issues/389#issuecomment-2171755306
+The first time Mamba runs, it will invoke the triton compiler and autotune, so it may be slow. From the second run onwards, the inference speed will be very fast. See: https://github.com/state-spaces/mamba/issues/389#issuecomment-2171755306
+
+**To reproduce the gFID of AiM**, you can use the evaluation [script of LlamaGen](https://github.com/FoundationVision/LlamaGen/tree/main/evaluations/c2i) and set: `temperature=1, top_p=1.0, top_k=0, cfg_scale=2.0` for AiM-B, `cfg_scale=1.75` for AiM-L or AiM-XL
 
 ## 🤗 Model Zoo
 The model weights can be downloaded from the [![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/collections/hp-l33/aim-66cd87744764acddd30ce80a).
@@ -61,12 +61,7 @@ AiM-XL  | 763M | 2.56 | [aim-xlarge](https://huggingface.co/hp-l33/aim-xlarge)
 
 
 ## 🌹 Acknowledgments
-This project would not have been possible without the computational resources provided by Professor [Guoqi Li](https://casialiguoqi.github.io) and his team. We would also like to thank the following repositories and papers for their inspiration:
-* [VQGAN](https://github.com/CompVis/taming-transformers)
-* [Mamba](https://github.com/state-spaces/mamba)
-* [LlamaGen](https://github.com/FoundationVision/LlamaGen)
-* [VAR](https://github.com/FoundationVision/VAR)
-* [DiT](https://github.com/facebookresearch/DiT)
+This project would not have been possible without the computational resources provided by Professor [Guoqi Li](https://casialiguoqi.github.io) and his team. We would also like to thank the following repositories and papers for their inspiration: [VQGAN](https://github.com/CompVis/taming-transformers), [Mamba](https://github.com/state-spaces/mamba), [LlamaGen](https://github.com/FoundationVision/LlamaGen), [VAR](https://github.com/FoundationVision/VAR), [DiT](https://github.com/facebookresearch/DiT)
 
 
 
