@@ -45,9 +45,10 @@ model.eval()
 
 imgs = model.generate(batch=8, temperature=1, top_p=0.98, top_k=600, cfg_scale=5)
 ```
-The first time Mamba runs, it will invoke the triton compiler and autotune, so it may be slow. From the second run onwards, the inference speed will be very fast. See: https://github.com/state-spaces/mamba/issues/389#issuecomment-2171755306
 
 **To reproduce the gFID of AiM**, you can use the evaluation [script of LlamaGen](https://github.com/FoundationVision/LlamaGen/tree/main/evaluations/c2i) and set: `temperature=1, top_p=1.0, top_k=0, cfg_scale=2.0` for AiM-B, `cfg_scale=1.75` for AiM-L or AiM-XL
+
+> PS: The first time Mamba runs, it will invoke the triton compiler and autotune, so it may be slow. From the second run onwards, the inference speed will be very fast. See: https://github.com/state-spaces/mamba/issues/389#issuecomment-2171755306
 
 ## 🤗 Model Zoo
 The model weights can be downloaded from the [![weights](https://img.shields.io/badge/%F0%9F%A4%97%20Weights-hp--l33/aim-yellow)](https://huggingface.co/collections/hp-l33/aim-66cd87744764acddd30ce80a).
